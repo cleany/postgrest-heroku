@@ -4,34 +4,60 @@ CONF_PATH="$2"
 
 #available config options
 config_settings=(
-  db-uri
+  #db-uri bound to database_url
+  #db-anon-role bound to database_url
   db-schema
-  db-anon-role
   db-pool
-  server-host
-  server-port
-  server-proxy-url
-  jwt-secret
-  secret-is-base64
-  max-rows
-  pre-request
+  #server-host force to 127.0.0.1
+  #server-port force to PORT + 1
+  #server-proxy-url
+  #jwt-secret
+  #secret-is-base64
+  #max-rows force to 100
+  #pre-request
 )
+
+#push value in settings
+function push_setting {
+  conf=$1
+  val=$2
+
+  if [[ $val =~ [^0-9] ]]; then
+    # non-numbers must be quoted
+    echo "${conf}=\"${val}\"" >> $CONF_PATH
+  else
+    echo "${conf}=${val}" >> $CONF_PATH
+  fi
+}
+
+#push env var settings in postgrest config
+function push_var_setting {
+  conf=$1
+  var=$2
+
+  val="${!var:-}"
+  if [ "$val" ]; then
+    push_setting "$conf" "$val"
+  fi
+}
+
+if [ "${DATABASE_URL}" ]; then
+  anon=`echo "${DATABASE_URL}"|sed 's/postgres:\/\/\(\w\+\):.*/\1/'`
+
+  push_var_setting "db-uri" "DATABASE_URL"
+  push_setting "db-anon-role" $anon
+else
+  conf+=(db-uri db-anon-role)
+fi
 
 for conf in "${config_settings[@]}"; do
   var=`echo ${conf^^} | tr - _`
-  val="${!var:-}"
-  if [ "$val" ]; then
-    if [[ $val =~ [^0-9] ]]; then
-      # non-numbers must be quoted
-      echo "${conf}=\"${val}\"" >> $CONF_PATH
-    else
-      echo "${conf}=${val}" >> $CONF_PATH
-    fi
-  fi
+
+  push_var_setting "$conf" "$var"
 done
 
-# Bind to correct host and port for Heroku
-echo "server-host=\"0.0.0.0\"" >> $CONF_PATH
-echo "server-port=${PORT}" >> $CONF_PATH
+push_setting "server-host" 127.0.0.1
+push_setting "server-port" "$(($PORT + 1))"
+push_setting "max-row" 100
 
 exec "$@"

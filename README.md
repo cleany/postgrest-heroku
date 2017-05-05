@@ -17,14 +17,20 @@ and run these commands.
 
 ```bash
 # first set up a new app
-heroku apps:create --buildpack https://github.com/begriffs/postgrest-heroku.git
+heroku apps:create --buildpack https://github.com/cleany/postgrest-heroku.git
 
 # now fill in the values specific to your database
 heroku config:set POSTGREST_VER=0.4.0.0
-heroku config:set DB_URI=postgres://postgrest_test:postgrest111@postgrest-test.crbxuv1p3j1c.us-west-1.rds.amazonaws.com/postgrest_test
 heroku config:set DB_SCHEMA=public
-heroku config:set DB_ANON_ROLE=postgrest_test
 heroku config:set DB_POOL=60
+
+# If the db run locally DATABASE_URL could be used, simply promote the database
+# Thus db-uri will be set to database_url and db-anon-role will be extracted from it.
+heroku pg:promote DATABASE
+
+# otherwise you could manually define the db uri and the anon role
+heroku config:set DB_URI=postgres://postgrest_test:postgrest111@postgrest-test.crbxuv1p3j1c.us-west-1.rds.amazonaws.com/postgrest_test
+heroku config:set DB_ANON_ROLE=postgrest_test
 
 git push heroku master
 ```
