@@ -58,8 +58,8 @@ for conf in "${config_settings[@]}"; do
   push_var_setting "$conf" "$var"
 done
 
-push_setting "server-host" 0.0.0.0
-push_var_setting "server-port" "PORT"
+push_setting "server-host" 127.0.0.1
+push_setting "server-port" $(($PORT + 1))
 push_setting "max-row" 100
 
 exec "$@"

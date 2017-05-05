@@ -89,19 +89,29 @@ echo "-----> Copying the config file builder"
 cp $BP_DIR/env-to-config $BUILD_DIR
 chmod +x $BUILD_DIR/env-to-config
 
-echo "-----> Creating Procfile"
+echo "-----> Creating Runner"
 if ver20; then
-  cat <<EOF >> $BUILD_DIR/Procfile
-postgrest: ./${BIN} -p \$PORT -s -d \$DB_NAME -U \$AUTH_ROLE --db-pass "\$AUTH_PASS" -a \$ANONYMOUS_ROLE --db-host \$DB_HOST -P \$DB_PORT --db-pool \$DB_POOL --jwt-secret \$JWT_SECRET --v1schema \$SCHEMA
+  cat <<EOF >> $BUILD_DIR/postgrest.sh
+#!/bin/bash
+./${BIN} -p \$PORT -s -d \$DB_NAME -U \$AUTH_ROLE --db-pass "\$AUTH_PASS" -a \$ANONYMOUS_ROLE --db-host \$DB_HOST -P \$DB_PORT --db-pool \$DB_POOL --jwt-secret \$JWT_SECRET --v1schema \$SCHEMA 2>&1
 EOF
 elif ver30; then
-  cat <<EOF >> $BUILD_DIR/Procfile
-postgrest: ./${BIN} "postgres://$AUTH_ROLE:$AUTH_PASS@$DB_HOST:$DB_PORT/$DB_NAME" -p \$PORT -a \$ANONYMOUS_ROLE --pool \$DB_POOL --jwt-secret \$JWT_SECRET --schema \$SCHEMA
+  cat <<EOF >> $BUILD_DIR/postgrest.sh
+#!/bin/bash
+./${BIN} "postgres://$AUTH_ROLE:$AUTH_PASS@$DB_HOST:$DB_PORT/$DB_NAME" -p \$PORT -a \$ANONYMOUS_ROLE --pool \$DB_POOL --jwt-secret \$JWT_SECRET --schema \$SCHEMA 2>&1
 EOF
 else
-  cat <<EOF >> $BUILD_DIR/Procfile
-postgrest: ./env-to-config ./${BIN} postgrest.conf
+  cat <<EOF >> $BUILD_DIR/postgrest.sh
+#!/bin/bash
+./env-to-config ./${BIN} postgrest.conf 2>&1
 EOF
+fi
+
+chmod +x $BUILD_DIR/postgrest.sh
+
+if [ ! -e $BUILD_DIR/Procfile ]; then
+  echo  "-----> Creating Procfile"
+  cat "web: ./postgrest.sh" > $BUILD_DIR/Procfile
 fi
 
 echo "-----> Persisting settings"
