@@ -46,7 +46,7 @@ function push_var_setting {
 if [ "${DATABASE_URL}" ]; then
   anon=`echo "${DATABASE_URL}"|sed 's/postgres:\/\/\(\w\+\):.*/\1/'`
 
-  push_var_setting "db-uri" "DATABASE_URL"
+  push_setting "db-uri" "$DATABASE_URL?sslmode=require"
   push_setting "db-anon-role" $anon
 else
   conf+=(db-uri db-anon-role)
